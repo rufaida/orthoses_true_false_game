@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>لعبة صح أم خطأ – مدخل إلى الأجهزة التقويمية</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#0f1b3d;--bg2:#1c2f6b;--card:#fff;--tx:#14213d;--ok:#1f9d55;--no:#d64545;--gold:#ffc83d}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:Tahoma,"Segoe UI",Arial,sans-serif;color:#fff;background:radial-gradient(circle at 50% 0,var(--bg2),var(--bg));text-align:center;padding:16px}
+h1{font-size:1.4rem;margin:8px 0 2px}
+.sub{opacity:.8;font-size:.9rem;margin-bottom:12px}
+.score{display:inline-flex;gap:14px;background:rgba(255,255,255,.1);padding:8px 18px;border-radius:30px;margin-bottom:14px;font-size:.95rem}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:520px;margin:0 auto}
+.star{position:relative;aspect-ratio:1;border:0;background:none;cursor:pointer;padding:0;transition:transform .15s}
+.star:hover:not(:disabled){transform:scale(1.1) rotate(8deg)}
+.star svg{width:100%;height:100%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.4))}
+.star svg path{fill:var(--gold);transition:fill .3s}
+.star span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:#5a3d00;padding-top:6px}
+.star.ok svg path{fill:var(--ok)}.star.no svg path{fill:var(--no)}
+.star.ok span,.star.no span{color:#fff}
+.star:disabled{cursor:default}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:16px;z-index:5}
+.ov.show{display:flex}
+.box{background:var(--card);color:var(--tx);border-radius:20px;max-width:520px;width:100%;padding:22px;max-height:90vh;overflow:auto}
+.num{display:inline-block;background:var(--gold);color:#5a3d00;font-weight:800;border-radius:30px;padding:2px 16px;margin-bottom:10px}
+.q{font-size:1.2rem;line-height:1.9;margin:6px 0 16px}
+.btns{display:flex;gap:12px}
+.btns button,.close,.reset{font:inherit;font-weight:700;border:0;border-radius:14px;padding:12px;cursor:pointer;flex:1;font-size:1.1rem}
+.t{background:var(--ok);color:#fff}.f{background:var(--no);color:#fff}
+.res{display:none;margin-top:16px;padding:14px;border-radius:14px;line-height:1.8;text-align:right}
+.res.show{display:block}
+.res.ok{background:#e4f6ec}.res.no{background:#fbe7e7}
+.res b{font-size:1.15rem}
+.close{background:var(--bg2);color:#fff;margin-top:12px;width:100%;display:none}
+.reset{background:rgba(255,255,255,.15);color:#fff;margin-top:18px;padding:10px 24px;flex:none}
+.final{font-size:1.2rem;margin-top:14px;color:var(--gold);min-height:1.5em}
+@media(min-width:560px){.board{grid-template-columns:repeat(5,1fr);max-width:620px}}
+</style>
+</head>
+<body>
+<h1>⭐ صح أم خطأ ⭐</h1>
+<div class="sub">مدخل إلى الأجهزة التقويمية – اختر نجمة</div>
+<div class="score"><span>✅ صحيحة: <b id="sc">0</b></span><span>❌ خاطئة: <b id="wr">0</b></span><span>⭐ المتبقي: <b id="left">20</b></span></div>
+<div class="board" id="board"></div>
+<div class="final" id="final"></div>
+<button class="reset" onclick="init()">🔄 إعادة اللعبة</button>
+
+<div class="ov" id="ov"><div class="box">
+<div class="num" id="qn"></div>
+<div class="q" id="qt"></div>
+<div class="btns" id="btns"><button class="t" onclick="ans(true)">✔ صح</button><button class="f" onclick="ans(false)">✘ خطأ</button></div>
+<div class="res" id="res"></div>
+<button class="close" id="cl" onclick="closeQ()">متابعة</button>
+</div></div>
+
+<script>
+const Q=[
+["كلمة المقومة orthosis كلمة يونانية تعني «جعل الجسم مستقيماً».",true,"صحيح، هذا أصل المصطلح اليوناني."],
+["مصطلح «الجبيرة splint» يعبّر عن جميع المقومات ويوصى باستخدامه بديلاً عن المقومة.",false,"الصحيح: المصطلح غامض وغير موصى به، لأن كثيراً من المقومات لها أكثر من دور غير التثبيت الميكانيكي السكوني."],
+["تُستخدم الجبيرة أساساً لتثبيت جزء مصاب لتعزيز الشفاء، وغالباً في الطوارئ أو للتثبيت قصير الأمد.",true,"صحيح، أما الدعامة فتُستخدم للدعم طويل الأمد."],
+["الدعامة brace لا تسمح بأي حركة في المنطقة المصابة إطلاقاً.",false,"الصحيح: توفر الدعم والاستقرار وغالباً ما تسمح ببعض الحركة."],
+["في عام 1972 طُوّرت مصطلحات لوصف المقومات تعتمد على المفصل الذي تشمله واختصاره بحرف مع إضافة حرف O في النهاية.",true,"صحيح، مثل KAFO و AFO."],
+["GRAFO هي مقومة للركبة والكاحل والقدم تُعرف أيضاً بـ KAFO.",false,"الصحيح: GRAFO مقومة كاحل قدم تستخدم قوة رد فعل الأرض، أما KAFO فهي مقومة الركبة والكاحل والقدم."],
+["فني المقومات orthotist هو من أنهى مرحلة تعليمية وفترة تدريبية مصادقاً عليها ويُسمح له بتصميم المقومات وأخذ القياس وتصنيعها ومواءمتها.",true,"صحيح، وفق أوراق اعتماد أو ترخيص."],
+["تمرّ المقومة المخصصة للمريض بمراحل تشمل التقييم وأخذ القياس وتشكيل الطبعة السلبية ثم النموذج الموجب.",true,"صحيح، والنموذج الموجب أساس عملية التصنيع الخاصة بالمريض."],
+["المقومات الجاهزة (مسبقة التصنيع) لا يمكن تعديلها من قبل فني المقومات.",false,"الصحيح: يمكن لفني المقومات تعديلها إلى قياس مقارب لقياس جزء جسم المريض."],
+["تُستخدم المقومة الدائمة بعد الإصابة أو العمل الجراحي لفترة محددة فقط.",false,"الصحيح: هذا وصف المقومة المؤقتة، أما الدائمة فتُستخدم للأبد عند ضعف عضلي أو شلل أو تشوه لا يمكن تصحيحه."],
+["المقومة الثابتة (الساكنة) جهاز صلب يوفر الدعم دون أي حركة، وتُستخدم أيضاً لتصحيح التشوه بالتجبير المتسلسل.",true,"صحيح، وتمنع التصلب والتقلص بإبقاء الجزء في وضع وظيفي."],
+["المقومة الديناميكية تسمح بالحركة في اتجاهات محددة ومن أهدافها تقوية العضلات وإعادة تأهيلها.",true,"صحيح، ومن أهدافها أيضاً منع تصلب المفصل والمساعدة في أنشطة الحياة اليومية."],
+["الاختصار WHO في مقومات الطرف العلوي يشير إلى مقومة المعصم واليد.",true,"صحيح (Wrist-Hand Orthosis)، أما EO فللمرفق."],
+["الاختصار HKAFO يشير إلى مقومة الركبة والكاحل والقدم فقط.",false,"الصحيح: تشمل الورك والركبة والكاحل والقدم."],
+["TLSO مقومة تشمل المنطقة الصدرية والقطنية والعجزية من العمود الفقري.",true,"صحيح (Thoraco-Lumbo-Sacral Orthosis)."],
+["من أهداف المواءمة (الراحة وتحمل الجلد): يجب أن تزول تغيرات لون الجلد بعد خلع المقومة خلال نحو 10 دقائق.",true,"صحيح، لضمان عدم وجود ضغط أو إجهاد قص غير مناسب."],
+["المظهر الخارجي (التجميل) ليس من أهداف مواءمة المقومة.",false,"الصحيح: يجب أن تكون المقومة مقبولة اجتماعياً ومدمجة قدر الإمكان وغير ضخمة أو ثقيلة."],
+["تحرير الوزن وظيفة للمقومة تنقل الوزن من وتر الرضفة أو عظم الإسك إلى المقومة مباشرة.",true,"صحيح، دون نقل الوزن عبر الأجزاء الأدنى من منطقة النقل."],
+["من الاعتبارات قبل وصف المقومة: مدى حركة المفاصل، قوة العضلات، الإحساس والألم، التشنج، التشوهات والقصر.",true,"صحيح، إضافة إلى الاحتياجات المهنية والمتانة والبساطة والراحة والتجميل."],
+["لا تُوصف المقومات في حالات التهاب المفاصل والحروق والإصابات الرياضية.",false,"الصحيح: هذه كلها من الحالات التي تستدعي وصف المقومات، مع ما بعد شلل الأطفال والسكتة الدماغية وأذيات الحبل الشوكي."]
+];
+let order,cur,done,sc,wr;
+const $=id=>document.getElementById(id);
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function init(){
+ order=shuffle([...Q.keys()]);sc=0;wr=0;done=0;
+ const b=$("board");b.innerHTML="";
+ for(let i=0;i<20;i++){
+  const s=document.createElement("button");s.className="star";s.id="s"+i;
+  s.innerHTML='<svg viewBox="0 0 100 100"><path d="M50 4l13.5 29.8 32.5 3.6-24.2 22 6.9 32L50 75.9 21.3 91.4l6.9-32L4 37.4l32.5-3.6z"/></svg><span>'+(i+1)+'</span>';
+  s.onclick=()=>openQ(i);b.appendChild(s);
+ }
+ $("final").textContent="";upd();
+}
+function upd(){$("sc").textContent=sc;$("wr").textContent=wr;$("left").textContent=20-done}
+function openQ(i){
+ cur=i;$("qn").textContent="السؤال "+(i+1);$("qt").textContent=Q[order[i]][0];
+ $("btns").style.display="flex";$("res").className="res";$("cl").style.display="none";$("ov").classList.add("show");
+}
+function ans(v){
+ const q=Q[order[cur]],ok=v===q[1],s=$("s"+cur);
+ s.classList.add(ok?"ok":"no");s.disabled=true;
+ ok?sc++:wr++;done++;upd();
+ $("btns").style.display="none";
+ const r=$("res");r.className="res show "+(ok?"ok":"no");
+ r.innerHTML=(ok?"✅ <b>إجابة صحيحة!</b>":"❌ <b>إجابة خاطئة</b>")+"<br>الإجابة الصحيحة: <b>"+(q[1]?"صح":"خطأ")+"</b><br>"+q[2];
+ $("cl").style.display="block";
+}
+function closeQ(){
+ $("ov").classList.remove("show");
+ if(done===20)$("final").textContent="🏆 انتهت اللعبة! نتيجتك: "+sc+" من 20";
+}
+init();
+</script>
+</body>
+</html>
